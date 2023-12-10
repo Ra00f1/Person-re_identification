@@ -23,7 +23,6 @@ def Loader():
         print('Folders passed: ', file, '/', len(os.listdir(path)))
         print("---------------------------------------------")
 
-
         if file == '0000' or file == '0001':
             continue
         for image in os.listdir(path + '/' + file ):
@@ -36,7 +35,6 @@ def Loader():
                 antialias=False,
                 name=None
             )
-
 
 #TODO: Add adaptive normalization
 #TODO: Need labels ????????????????????????????

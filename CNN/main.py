@@ -1,12 +1,21 @@
+import glob
 import os
 import json
 
 import cv2
+import numpy as np
 from pycocotools import coco as COCO
 
 
 def Load_File():
-    data = {}
+    DataSet_Directory = "D:/Projects/Person re Identification/Datasets/CNN Dataset/train2017"
+
+    data = glob.glob(os.path.join(DataSet_Directory, "*.jpg"))
+    print(data[1])
+    np.random.shuffle(data)  # Shuffle the image paths list
+    print(data[1])
+
+    batch_paths = data[index * 32:(index + 1) * 32]
     return data
 
 def Find_Image_Info():

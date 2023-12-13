@@ -45,6 +45,5 @@ class MyDataGenerator(Sequence):
 
         # Convert to NumPy arrays
         batch_images = np.array(batch_images)
-        batch_labels = np.array(batch_labels)
 
-        return batch_images, batch_labels
+        return batch_images

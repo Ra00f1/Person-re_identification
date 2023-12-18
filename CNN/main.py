@@ -5,9 +5,10 @@ import json
 import cv2
 import numpy as np
 import tensorflow as tf
+import torch
 from keras import layers, models
-from MISC import Temp
-
+from yolov5 import detect
+from PIL import Image
 
 def Load_File():
     #DataSet_Directory = "D:/Projects/Person re Identification/Datasets/CNN Dataset/train2017"
@@ -24,18 +25,77 @@ def Load_File():
     #    x_train.append(image_values)
 #
     #print(x_train[1])
-    file_path = "D:/Projects/Person re Identification/Datasets/CNN Dataset/train2017"
-    file_size_bytes = os.path.getsize(file_path)
-    file_size_gb = file_size_bytes / (1024 ** 3)
-
-    print(f"File size: {file_size_gb:.2f} GB")
     #print(x_train[1].shape)
 #
     # batch_paths = data[index * 32:(index + 1) * 32]
-    for i in range (0, 10):
-        print(Temp.Temp(32)[i])
 
+
+    Json_Directory = "D:/Projects/Person re Identification/Datasets/CNN Dataset/annotations"
+    Json_File = "instances_train2017.json"
+
+    Json_Path = os.path.join(Json_Directory, Json_File)
+    image_ids = []
+
+    with open(Json_Path) as f:
+        data = json.load(f)
+        print(data)
+        print(data['images'])
+        print(data['annotations'])
+    #    for i in data['images']:
+    #        image_ids.append(i['id'])
+    #f.close()
+    #with open(Json_Path) as f:
+    #    data = json.load(f)
+    #    for i in data['annotations']:
     #return data
+
+
+def Test():
+    DataSet_Directory = "D:/Projects/Person re Identification/Datasets/CNN Dataset/train2017"
+    DataSet_File = '000000000764.jpg'
+
+    DataSet_Path = os.path.join(DataSet_Directory, DataSet_File)
+
+    # Load the model
+    model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
+
+    # Load test image
+    image = Image.open(DataSet_Path)
+
+    # Perform inference
+    results = model(image)
+
+    # Visualize results (optional)
+    results.save()
+    results.print()
+    person = results.pandas().xyxy[0][results.pandas().xyxy[0]["name"] == "person"]
+    print(person)
+
+    img = cv2.imread(DataSet_Path)
+    # Draw bounding boxes and confidence scores on the image
+
+
+    for person in results.pandas().xyxy[0][results.pandas().xyxy[0]["name"] == "person"].iterrows():
+        person_box = person[1]
+        start_point = (int(person_box["xmin"]), int(person_box["ymin"]))
+        end_point = (int(person_box["xmax"]), int(person_box["ymax"]))
+        confidence = round(person_box["confidence"], 2)
+        cv2.rectangle(img, start_point, end_point, (0, 255, 0), 2)
+        cv2.putText(img, f"Person: {confidence}", start_point, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+    cv2.imshow("Android_cam", img)
+    #    # Extract bounding box coordinates
+    #    person_box = person[1]
+#
+    #    # Crop the image for this person
+    #    cropped_image = image.crop((person_box["xmin"], person_box["ymin"], person_box["xmax"], person_box["ymax"]))
+#
+    #    # Save the cropped image (optional)
+    #    # You can save each cropped image with a unique identifier or based on the person's confidence score
+    #    cropped_image.save(f"cropped_person_{person[0]}.jpg")
+
+
+
+
 
 
 def Find_Image_Info():
@@ -44,7 +104,7 @@ def Find_Image_Info():
     Json_Path = os.path.join(Json_Directory, Json_File)
 
     DataSet_Directory = "D:/Projects/Person re Identification/Datasets/CNN Dataset/train2017"
-    DataSet_File = '000000000009.jpg'
+    DataSet_File = '000000000785.jpg'
     DataSet_Path = os.path.join(DataSet_Directory, DataSet_File)
     a = 0
 
@@ -104,4 +164,4 @@ def CNN(train_images, train_labels, val_images, val_labels, test_images):
 
 
 if __name__ == '__main__':
-    data = Load_File()
+    data = Test()

@@ -6,9 +6,9 @@ import imutils
 import torch
 
 if __name__ == '__main__':
-    model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
+    model = torch.hub.load('ultralytics/yolov5', 'yolov5l')
 # Replace the below URL with your own. Make sure to add "/shot.jpg" at last.
-    url = "http://192.168.1.128:8080/shot.jpg"
+    url = "http://10.123.13.160:8080/shot.jpg"
 
     # While loop to continuously fetching data from the Url
     while True:

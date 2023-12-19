@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from torch.nn.functional import normalize
 import tripletloss
 import i_LIDS_VID
-from torch.nn import Module, Conv2d, Linear, ReLU, Sequential, Flatten
+from torch.nn import Module, Conv2d, Linear, ReLU, Sequential, Flatten, MaxPool2d, AvgPool2d
 import numpy as np
 
 
@@ -13,12 +13,16 @@ class FeatureExtractor(Module):
     def __init__(self, in_channels, hidden_dim):
         super(FeatureExtractor, self).__init__()
         self.layers = Sequential(
-            Conv2d(672, hidden_dim, kernel_size=3, padding=1),
+            Conv2d(224, hidden_dim, kernel_size=3, padding=1),
             ReLU(),
+
+            MaxPool2d(kernel_size=2, stride=1),
             # Add additional convolutional layers and activation functions as needed
             Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=1),
             ReLU(),
-            Linear(hidden_dim * 224 * 224, hidden_dim)
+            MaxPool2d(kernel_size=2, stride=1),
+            Flatten(),
+            Linear(222, 64)
         )
 
     def forward(self, x):
@@ -31,11 +35,11 @@ class FeatureExtractor(Module):
         positive_tensor = positive_tensor.float()
         negative_tensor = negative_tensor.float()
 
-        # features = torch.stack([anchor_tensor, positive_tensor, negative_tensor])
+        features = torch.stack([anchor_tensor, positive_tensor, negative_tensor])
         # Assume x is of shape (batch_size, 3, 224, 224)
         # Concatenate channels of anchor, positive, and negative images
-        features = torch.cat([anchor_tensor, positive_tensor, negative_tensor], dim=0)
-        # print(features)
+        #features = torch.cat([anchor_tensor, positive_tensor, negative_tensor], dim=0)
+        print(features)
         print(features.shape)
 
         return self.layers(features)
@@ -120,19 +124,6 @@ def Label_Input_Generator():
     return Labels, Input
 
 
-def cosine_accuracy(anchor_features, positive_features, negative_features):
-    positive_sim = torch.nn.functional.cosine_similarity(anchor_features, positive_features)
-    negative_sim = torch.nn.functional.cosine_similarity(anchor_features, negative_features)
-    return (positive_sim > negative_sim).float().mean()
-
-
-def threshold_accuracy(anchor_features, positive_features, negative_features, threshold):
-    positive_dist = torch.nn.functional.pairwise_distance(anchor_features, positive_features)
-    negative_dist = torch.nn.functional.pairwise_distance(anchor_features, negative_features)
-    correct = (((positive_dist < threshold) & (negative_dist > threshold))).float().sum()
-    return correct / len(anchor_features)
-
-
 if __name__ == '__main__':
     print("Starting")
 
@@ -149,8 +140,6 @@ if __name__ == '__main__':
 
     for epoch in range(10):
         print(f"Epoch {epoch + 1}")
-        epoch_loss = 0
-        epoch_accuracy = 0
         for i in range(20):
             batch = i_LIDS_VID.Triplet_Generator(Labels, Inputs, batch_size)
             for image in batch:
@@ -158,20 +147,17 @@ if __name__ == '__main__':
                 # Extract features
                 optimizer.zero_grad()
                 features = model(image)
-                anchor, positive, negative = torch.split(features, 1, dim=1)
+                print(features.shape)
+                print(features)
+                anchor, positive, negative = torch.split(features, 1, dim=0)
 
                 # Calculate and back propagate loss
                 loss = triplet_loss(anchor, positive, negative)
-                accuracy = cosine_accuracy(anchor, positive, negative)
                 # Backpropagation and update
                 loss.backward()
                 optimizer.step()
 
-                epoch_accuracy += accuracy
                 # Accumulate loss and accuracy
-                epoch_loss += loss
 
-        avg_loss = epoch_loss / (20 * batch_size)
-        avg_accuracy = epoch_accuracy / (20 * batch_size)
         # Print or log metrics
-        print(f"Epoch {epoch + 1}: Avg Loss: {avg_loss:.4f}, Avg Accuracy: {avg_accuracy:.4f}")
+        print(f"Epoch {epoch + 1}")

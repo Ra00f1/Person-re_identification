@@ -186,3 +186,5 @@ fabric.properties
 
 Person-re_identification/Libraries/
 *.whl
+*.jpg
+*.pt

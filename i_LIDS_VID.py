@@ -136,4 +136,4 @@ if __name__ == '__main__':
                 Input.append([person, image, Person_path])
     # print(Input)
 
-    data = Triplet_Generator(Labels, Input, 200000)
+    data = Triplet_Generator(Labels, Input, 200)

@@ -1,86 +1,37 @@
 import os
 import cv2
-import torch
 from matplotlib import pyplot as plt
 from torch.nn.functional import normalize
-import tripletloss
 import i_LIDS_VID
+import tensorflow as tf
+import torch
+import torch.nn as nn
 from torch.nn import Module, Conv2d, Linear, ReLU, Sequential, Flatten, MaxPool2d, AvgPool2d, Sigmoid
 import numpy as np
+from torchsummary import summary
 
 
+# Hyperparameters
 class FeatureExtractor(Module):
-    def __init__(self, in_channels, hidden_dim):
+    def __init__(self):
         super(FeatureExtractor, self).__init__()
-        self.layers = Sequential(
-            Conv2d(672, hidden_dim, kernel_size=3, padding=1, stride=1),
-            ReLU(),
-            MaxPool2d(kernel_size=2, stride=1),
-
-            Conv2d(hidden_dim, hidden_dim * 2, kernel_size=3, padding=1, stride=1),
-            ReLU(),
-            MaxPool2d(kernel_size=2, stride=1),
-
-            # Add additional convolutional layers and activation functions as needed
-            Conv2d(hidden_dim * 2, hidden_dim * 4, kernel_size=3, padding=1, stride=1),
-            ReLU(),
-            # MaxPool2d(kernel_size=2, stride=1),
-
-            Flatten(),
-            # Increase capacity of fully connected layers
-            Linear(256, 222),
-            ReLU(),
-            Linear(256, 64),
-
-            Linear(64, 1),
-            Sigmoid()  # Apply sigmoid activation
-        )
+        resnet50 = torch.hub.load('pytorch/vision:v0.10.0', 'resnet50', pretrained=True)
+        for param in resnet50.parameters():
+            param.requires_grad = False
+        self.base_model = resnet50
+        self.fc1 = nn.Linear(1000, 512)  # Adjust input size based on ResNet50 output
+        self.fc2 = nn.Linear(512, 224)
 
     def forward(self, x):
-        anchor_tensor = x[0]  # Convert each list to a tensor
-        positive_tensor = x[1]
-        negative_tensor = x[2]
-
-        # change data type in tensor to float
-        anchor_tensor = anchor_tensor.float()
-        positive_tensor = positive_tensor.float()
-        negative_tensor = negative_tensor.float()
-
-        #features = torch.stack([anchor_tensor, positive_tensor, negative_tensor])
-        # Assume x is of shape (batch_size, 3, 224, 224)
-        # Concatenate channels of anchor, positive, and negative images
-        features = torch.cat([anchor_tensor, positive_tensor, negative_tensor], dim=0)
-        print(features)
-        print(features.shape)
-
-        return self.layers(features)
+        x = self.base_model(x)
+        x = x.view(x.size(0), -1)  # Flatten
+        x = self.fc1(x)
+        x = nn.ReLU()(x)
+        x = self.fc2(x)  # Output embedding
+        return x
 
 
-class TripletLoss(Module):
-    def __init__(self, margin):
-        super(TripletLoss, self).__init__()
-        self.margin = margin
-
-    def forward(self, anchor, positive, negative):
-        # Calculate pairwise distances
-        pos_dist = torch.nn.functional.pairwise_distance(anchor, positive)
-        neg_dist = torch.nn.functional.pairwise_distance(anchor, negative)
-
-        # Apply hinge loss with margin
-        loss = torch.relu(pos_dist - neg_dist + self.margin)
-        return loss.mean()
-
-
-def train(feature_extractor, optimizer, data):
-    # ... data loading and processing ...
-    # Extract features
-    anchor, positive, negative = feature_extractor(data)
-    # Calculate loss
-    loss = tripletloss(anchor, positive, negative)
-    # Backpropagation and update
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
+# class Classifier(Module):
 
 
 def Visualize_Features(features):
@@ -107,6 +58,7 @@ def Visualize_Features(features):
 
 
 def Label_Input_Generator():
+    print("Generating Labels and Inputs")
     Output_path = "D:\Projects\Person re Identification\Datasets\iLIDS-VID\i-LIDS-VID\images"
     Number_of_Cams = 2
 
@@ -132,17 +84,16 @@ def Label_Input_Generator():
             for image in os.listdir(Person_path):
                 Input.append([person, image, Person_path])
 
+    print("Labels and Inputs Generated")
     return Labels, Input
 
 
 if __name__ == '__main__':
     print("Starting")
 
-    model = FeatureExtractor(3, 64)
-    triplet_loss = TripletLoss(0.3)
-
-    # Extract features
-    # features = model(image)
+    model = FeatureExtractor()
+    triplet_loss = nn.TripletMarginLoss(margin=0.3)
+    summary(model, (3, 224, 224))
 
     batch_size = 128
     Labels, Inputs = Label_Input_Generator()
@@ -157,18 +108,20 @@ if __name__ == '__main__':
                 # ... data loading and processing ...
                 # Extract features
                 optimizer.zero_grad()
-                features = model(image)
-                print(features.shape)
-                print(features)
-                anchor, positive, negative = torch.split(features, 1, dim=0)
+
+                anchor_image = tf.reshape(image[0], [1, 3, 224, 224])
+                positive_image = tf.reshape(image[1], [1, 3, 224, 224])
+                negative_image = tf.reshape(image[2], [1, 3, 224, 224])
+
+                anchor_emb = model(anchor_image)
+                positive_emb = model(positive_image)
+                negative_emb = model(negative_image)
 
                 # Calculate and back propagate loss
-                loss = triplet_loss(anchor, positive, negative)
+                loss = triplet_loss(anchor_emb, positive_emb, negative_emb)
                 # Backpropagation and update
                 loss.backward()
                 optimizer.step()
-
-                # Accumulate loss and accuracy
 
         # Print or log metrics
         print(f"Epoch {epoch + 1}")

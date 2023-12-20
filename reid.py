@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from torch.nn.functional import normalize
 import tripletloss
 import i_LIDS_VID
-from torch.nn import Module, Conv2d, Linear, ReLU, Sequential, Flatten, MaxPool2d, AvgPool2d
+from torch.nn import Module, Conv2d, Linear, ReLU, Sequential, Flatten, MaxPool2d, AvgPool2d, Sigmoid
 import numpy as np
 
 
@@ -13,16 +13,27 @@ class FeatureExtractor(Module):
     def __init__(self, in_channels, hidden_dim):
         super(FeatureExtractor, self).__init__()
         self.layers = Sequential(
-            Conv2d(224, hidden_dim, kernel_size=3, padding=1),
+            Conv2d(672, hidden_dim, kernel_size=3, padding=1, stride=1),
             ReLU(),
+            MaxPool2d(kernel_size=2, stride=1),
 
-            MaxPool2d(kernel_size=2, stride=1),
-            # Add additional convolutional layers and activation functions as needed
-            Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=1),
+            Conv2d(hidden_dim, hidden_dim * 2, kernel_size=3, padding=1, stride=1),
             ReLU(),
             MaxPool2d(kernel_size=2, stride=1),
+
+            # Add additional convolutional layers and activation functions as needed
+            Conv2d(hidden_dim * 2, hidden_dim * 4, kernel_size=3, padding=1, stride=1),
+            ReLU(),
+            # MaxPool2d(kernel_size=2, stride=1),
+
             Flatten(),
-            Linear(222, 64)
+            # Increase capacity of fully connected layers
+            Linear(256, 222),
+            ReLU(),
+            Linear(256, 64),
+
+            Linear(64, 1),
+            Sigmoid()  # Apply sigmoid activation
         )
 
     def forward(self, x):
@@ -35,10 +46,10 @@ class FeatureExtractor(Module):
         positive_tensor = positive_tensor.float()
         negative_tensor = negative_tensor.float()
 
-        features = torch.stack([anchor_tensor, positive_tensor, negative_tensor])
+        #features = torch.stack([anchor_tensor, positive_tensor, negative_tensor])
         # Assume x is of shape (batch_size, 3, 224, 224)
         # Concatenate channels of anchor, positive, and negative images
-        #features = torch.cat([anchor_tensor, positive_tensor, negative_tensor], dim=0)
+        features = torch.cat([anchor_tensor, positive_tensor, negative_tensor], dim=0)
         print(features)
         print(features.shape)
 

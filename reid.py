@@ -9,6 +9,7 @@ import torch.nn as nn
 from torch.nn import Module, Conv2d, Linear, ReLU, Sequential, Flatten, MaxPool2d, AvgPool2d, Sigmoid
 import numpy as np
 from torchsummary import summary
+from torchvision import transforms
 
 
 # Hyperparameters
@@ -20,7 +21,7 @@ class FeatureExtractor(Module):
             param.requires_grad = False
         self.base_model = resnet50
         self.fc1 = nn.Linear(1000, 512)  # Adjust input size based on ResNet50 output
-        self.fc2 = nn.Linear(512, 224)
+        self.fc2 = nn.Linear(512, 224)  # Output embedding size
 
     def forward(self, x):
         x = self.base_model(x)
@@ -91,6 +92,11 @@ def Label_Input_Generator():
 if __name__ == '__main__':
     print("Starting")
 
+    transform = transforms.Compose([
+        transforms.ToTensor(),  # Convert image to PyTorch tensor and scale to [0, 1]
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # Normalize with ImageNet mean/std
+    ])
+
     model = FeatureExtractor()
     triplet_loss = nn.TripletMarginLoss(margin=0.3)
     summary(model, (3, 224, 224))
@@ -108,10 +114,20 @@ if __name__ == '__main__':
                 # ... data loading and processing ...
                 # Extract features
                 optimizer.zero_grad()
+                anchor_numpy = image[0].numpy()
+                anchor_image = transform(anchor_numpy)
+                anchor_image = tf.reshape(anchor_image, [1, 3, 224, 224])
 
-                anchor_image = tf.reshape(image[0], [1, 3, 224, 224])
-                positive_image = tf.reshape(image[1], [1, 3, 224, 224])
-                negative_image = tf.reshape(image[2], [1, 3, 224, 224])
+                positive_numpy = image[1].numpy()
+                positive_image = transform(positive_numpy)
+                positive_image = tf.reshape(positive_image, [1, 3, 224, 224])
+
+                negative_numpy = image[2].numpy()
+                negative_image = transform(negative_numpy)
+                negative_image = tf.reshape(negative_image, [1, 3, 224, 224])
+
+                # print(anchor_image)
+                # print(positive_image)
 
                 anchor_emb = model(anchor_image)
                 positive_emb = model(positive_image)

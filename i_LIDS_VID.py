@@ -1,8 +1,7 @@
 import os
 import cv2
 import numpy as np
-import torch
-import i_LIDS_VID
+import tensorflow as tf
 
 
 def color_jitter(image, brightness=0.4, hue=0.1, saturation=0.4):
@@ -58,7 +57,7 @@ def Triplet_Generator(Labels, Inputs, Batch_Size=128):
         anchor = cv2.resize(anchor, (224, 224))
         anchor = color_jitter(anchor)
         # anchor_image = anchor
-        anchor = torch.from_numpy(anchor)
+        anchor = tf.convert_to_tensor(anchor)
 
         # Selecting a random image from the dataset
         person_name = Labels[anchor_index][0]
@@ -76,7 +75,7 @@ def Triplet_Generator(Labels, Inputs, Batch_Size=128):
         positive = cv2.resize(positive, (224, 224))
         positive = color_jitter(positive)
         # positive_image = positive
-        positive = torch.from_numpy(positive)
+        positive = tf.convert_to_tensor(positive)
 
         # Selecting a random negative image from the dataset
         negative_index = np.random.randint(0, len(negative_person_list))
@@ -84,7 +83,7 @@ def Triplet_Generator(Labels, Inputs, Batch_Size=128):
         negative = cv2.resize(negative, (224, 224))
         negative = color_jitter(negative)
         # negative_image = negative
-        negative = torch.from_numpy(negative)
+        negative = tf.convert_to_tensor(negative)
 
         data.append([anchor, positive, negative])
 

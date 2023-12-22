@@ -22,13 +22,16 @@ class FeatureExtractor(Module):
         self.base_model = resnet50
         self.fc1 = nn.Linear(1000, 512)  # Adjust input size based on ResNet50 output
         self.fc2 = nn.Linear(512, 224)  # Output embedding size
+        self.fc3 = nn.Linear(224, 128)
 
     def forward(self, x):
         x = self.base_model(x)
         x = x.view(x.size(0), -1)  # Flatten
         x = self.fc1(x)
         x = nn.ReLU()(x)
-        x = self.fc2(x)  # Output embedding
+        x = self.fc2(x)
+        x = nn.ReLU()(x)
+        x = self.fc3(x) # Output embedding
         return x
 
 
@@ -116,15 +119,12 @@ if __name__ == '__main__':
                 optimizer.zero_grad()
                 anchor_numpy = image[0].numpy()
                 anchor_image = transform(anchor_numpy)
-                anchor_image = tf.reshape(anchor_image, [1, 3, 224, 224])
 
                 positive_numpy = image[1].numpy()
                 positive_image = transform(positive_numpy)
-                positive_image = tf.reshape(positive_image, [1, 3, 224, 224])
 
                 negative_numpy = image[2].numpy()
                 negative_image = transform(negative_numpy)
-                negative_image = tf.reshape(negative_image, [1, 3, 224, 224])
 
                 # print(anchor_image)
                 # print(positive_image)

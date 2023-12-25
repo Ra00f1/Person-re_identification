@@ -16,4 +16,8 @@ class TripletLoss(nn.Module):
 
         return loss  # Return both loss and tape
 
+    def get_config(self):
+        config = super(TripletLoss, self).get_config()
+        config.update({'margin': self.margin})
+        return config
 

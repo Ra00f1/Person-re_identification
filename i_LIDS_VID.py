@@ -45,7 +45,7 @@ def color_jitter(image, brightness=0.4, hue=0.1, saturation=0.4):
 
 
 def Triplet_Generator(Labels, Inputs, Batch_Size=128):
-    print("Generating data...")
+    # print("Generating data...")
     data = []
     labels = len(Labels)
 
@@ -87,7 +87,7 @@ def Triplet_Generator(Labels, Inputs, Batch_Size=128):
 
         data.append([anchor, positive, negative])
 
-    print("Data generated successfully")
+    # print("Data generated successfully")
 
     # print(data[0])
     # cv2.imshow("Anchor", anchor_image)

@@ -2,7 +2,7 @@ import os
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-from keras import layers, models, optimizers
+from keras import layers, models, optimizers, Model
 from keras.applications import ResNet50
 import tensorflow as tf
 from keras.preprocessing.image import ImageDataGenerator
@@ -11,9 +11,6 @@ import i_LIDS_VID
 import tripletloss
 from keras.applications.resnet50 import preprocess_input
 from sklearn.model_selection import train_test_split
-
-
-# ... (other imports remain the same)
 
 # Hyperparameters
 class FeatureExtractor(models.Model):
@@ -43,16 +40,16 @@ class SimilarityNetwork(models.Model):
         super(SimilarityNetwork, self).__init__()
         self.flatten = layers.Flatten()
         self.merged = layers.Concatenate()  # Concatenate embeddings
-        self.fc1 = layers.Dense(256, activation='relu')
-        self.fc2 = layers.Dense(128, activation='relu')
+        self.fc1 = layers.Dense(1024, activation='relu')
+        self.fc2 = layers.Dense(512, activation='relu')
         self.output_layer = layers.Dense(1, activation='sigmoid')  # Output confidence
 
     def call(self, inputs):
         # print(inputs)
         # inputs = tf.reshape(inputs, (-1, 256))
-        print(inputs)
-        test = self.flatten(inputs)
-        print(test)
+        # print(inputs)
+        # test = self.flatten(inputs)
+        # print(test)
         anchor_embedding = inputs[0]  # Access individual tensors
         other_embedding = inputs[1]
 
@@ -185,6 +182,8 @@ def Similarity_Layer():
     model.build(input_shape=[(None, 128, 64, 3), (None, 128, 64, 3)])
     model.summary()
 
+    model.save("my_similarity_model", save_format="tf")
+
     return model
 
 
@@ -306,11 +305,70 @@ def Temp():
 
     print("Finished")
 
+def Temp2():
+    print("Started Temp2")
+
+    base_model = tf.saved_model.load("my_model")
+    images = []
+    similarity_labels = []
+    for i in range(5):
+        batchs = i_LIDS_VID.Triplet_Generator(Labels, Inputs, 1)
+        for batch in batchs:
+            anchor_tensor = preprocess_input(batch[0])
+            anchor_tensor = tf.expand_dims(anchor_tensor, axis=0)
+            anchor_features = base_model(anchor_tensor)
+
+            positive_tensor = preprocess_input(batch[1])
+            positive_tensor = tf.expand_dims(positive_tensor, axis=0)
+            postive_features = base_model(positive_tensor)
+
+
+            negative_tensor = preprocess_input(batch[2])
+            negative_tensor = tf.expand_dims(negative_tensor, axis=0)
+            negative_feature = base_model(negative_tensor)
+
+            images.append([anchor_features, postive_features])
+            similarity_labels.append(1)
+
+            images.append([anchor_features, negative_feature])
+            similarity_labels.append(0)
+
+    images = np.array(images)
+    similarity_labels = np.array(similarity_labels)
+
+    input_1 = layers.Input(shape=(224, 224, 3))
+    input_2 = layers.Input(shape=(224, 224, 3))
+
+    # Pass images through ResNet50
+    resnet_features_1 = base_model(input_1)
+    resnet_features_2 = base_model(input_2)
+
+    # Concatenate features
+    concatenated_features = layers.Concatenate()([resnet_features_1, resnet_features_2])
+
+    # Similarity network
+    x = layers.Flatten()(concatenated_features)
+    x = layers.Dense(1024, activation='relu')(x)
+    x = layers.Dense(512, activation='relu')(x)
+    output = layers.Dense(1, activation='sigmoid')(x)
+
+    # Combined model
+    model = Model([input_1, input_2], output)
+
+    # Compile and train the model (replace with your training code)
+    model.compile(loss='binary_crossentropy', optimizer='adam')
+
+    model.fit([images[:, 0], images[:, 1]], similarity_labels, epochs=1, batch_size=32)
+
 
 if __name__ == '__main__':
     print("Starting")
 
     Labels, Inputs = Label_Input_Generator()
 
+    # Start_Train_resnet50()
+    # laod trained model
+
+    Temp2()
 
     print("Finished")

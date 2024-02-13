@@ -12,6 +12,19 @@ import tripletloss                                              # Custom triplet
 from keras.applications.resnet50 import preprocess_input
 import visualkeras
 
+"""
+This is the main file for the Person Re-Identification project. The main goal of this project is to create a model that
+can identify a person from a set of images. The dataset used for this project is the iLIDS-VID dataset. The dataset
+contains images of people from two different cameras. The images are taken from different angles and at different times.
+The model is trained using the triplet loss function. The model is trained using the ResNet50 model as the base model.
+The model is trained using the Keras library. 
+
+The model is trained using the Adam(lr = 0.0001) optimizer and SGD(learning_rate=0.01, momentum=0.9, decay=0.0005) 
+However the overall performance of the model is the same in both cases which is overfitting and I suspect the reason 
+is the fact that the data for the Similarity model is only generated once while for Resnet50 it is created randomly 
+for each batch.(Will be fixed later) 
+"""
+
 # The Feature Extractor model class with RestNet50 as the base model
 class FeatureExtractor(models.Model):
     def __init__(self):
@@ -246,13 +259,13 @@ def Start_Train_Similarity(batch_count, batch_size, epoch):
     plt.savefig('Accuracy.png')
     plt.show()
 
-# TODO: Change the code to not do triplet loss
 
 # This function is created to just make everything look clearer and easier to understand when presenting the project
 def Train_Similarity(model, x_train, y_train, batch_size, epoch):
     history = model.fit(x_train, y_train, epochs=epoch, batch_size=batch_size, validation_split=0.2)
 
     return model, history
+
 
 # Show the model in a blockey way to visualize the layers of the model
 def Visualize_Network(model):
@@ -261,6 +274,7 @@ def Visualize_Network(model):
     visualkeras.layered_view(model, to_file='output.png').show()  # write and show
 
     visualkeras.layered_view(model)
+
 
 # Function to Test the model with one set of images one anchor and one positive/negative image
 def Test_REID(anchor, image, model_name):

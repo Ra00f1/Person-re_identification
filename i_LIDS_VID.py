@@ -5,7 +5,7 @@ import tensorflow as tf
 
 
 def color_jitter(image, brightness=0.4, hue=0.1, saturation=0.4):
-  """
+    """
   Applies random color jittering to an image.
 
   Args:
@@ -18,30 +18,30 @@ def color_jitter(image, brightness=0.4, hue=0.1, saturation=0.4):
     The jittered image. (numpy array)
   """
 
-  # Convert image to HSV color space
-  hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    # Convert image to HSV color space
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
-  # Randomly adjust brightness, contrast, and saturation
-  hue = np.random.uniform(-hue, hue)
-  sat = np.random.uniform(1 - saturation, 1 + saturation)
-  val = np.random.uniform(1 - brightness, 1 + brightness)
+    # Randomly adjust brightness, contrast, and saturation
+    hue = np.random.uniform(-hue, hue)
+    sat = np.random.uniform(1 - saturation, 1 + saturation)
+    val = np.random.uniform(1 - brightness, 1 + brightness)
 
-  h = hsv[:, :, 0] + hue
-  s = hsv[:, :, 1] * sat
-  v = hsv[:, :, 2] * val
+    h = hsv[:, :, 0] + hue
+    s = hsv[:, :, 1] * sat
+    v = hsv[:, :, 2] * val
 
-  # Clip values to valid range
-  h = np.clip(h, 0, 255)
-  s = np.clip(s, 0, 255)
-  v = np.clip(v, 0, 255)
+    # Clip values to valid range
+    h = np.clip(h, 0, 255)
+    s = np.clip(s, 0, 255)
+    v = np.clip(v, 0, 255)
 
-  # Convert back to BGR color space
-  hsv[:, :, 0] = h
-  hsv[:, :, 1] = s
-  hsv[:, :, 2] = v
-  image = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+    # Convert back to BGR color space
+    hsv[:, :, 0] = h
+    hsv[:, :, 1] = s
+    hsv[:, :, 2] = v
+    image = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
 
-  return image
+    return image
 
 
 def Test_Triplet_Generator(Labels, Inputs, Batch_Size=128):
@@ -95,6 +95,7 @@ def Test_Triplet_Generator(Labels, Inputs, Batch_Size=128):
 
     return data, anchor_image, positive_image, negative_image
 
+
 def Triplet_Generator(Labels, Inputs, Batch_Size=128):
     # print("Generating data...")
     data = []
@@ -109,7 +110,6 @@ def Triplet_Generator(Labels, Inputs, Batch_Size=128):
         # anchor_image_normal = anchor
         anchor = color_jitter(anchor)
         anchor = tf.convert_to_tensor(anchor)
-
 
         # Selecting a random image from the dataset
         person_name = Labels[anchor_index][0]

@@ -7,10 +7,11 @@ import os
 
 
 class MyDataGenerator(Sequence):
-    def __init__(self, image_path, label_path, batch_size=32):
+    def __init__(self, image_path, label_path, batch_size, Test=False):
         self.image_path = image_path
         self.label_path = label_path
         self.batch_size = batch_size
+        self.Test = Test
 
     def __get_images__(self):
         self.images_path = glob.glob(os.path.join(self.image_path, "*.jpg"))
@@ -28,6 +29,9 @@ class MyDataGenerator(Sequence):
         batch_images = []
         for path in batch_paths:
             image = cv2.imread(path)
+            # if Testing show the images
+            if self.Test:
+                cv2.imshow("image", image)
 
             image = tf.resize(
                 images=image,

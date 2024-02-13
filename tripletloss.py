@@ -8,7 +8,7 @@ class TripletLoss(nn.Module):
         self.margin = margin
 
     def forward(self, anchor, positive, negative):
-            # Calculate distances and loss
+        # Calculate distances and loss
         anchor_positive_dist = tf.norm(anchor - positive, axis=1)
         anchor_negative_dist = tf.norm(anchor - negative, axis=1)
         loss = anchor_positive_dist - anchor_negative_dist + self.margin
@@ -20,4 +20,3 @@ class TripletLoss(nn.Module):
         config = super(TripletLoss, self).get_config()
         config.update({'margin': self.margin})
         return config
-

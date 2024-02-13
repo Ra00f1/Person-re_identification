@@ -197,3 +197,7 @@ Person-re_identification/Data/
 *.jpg
 *.png
 *.pt
+*.pb
+*.index
+*.data-00000-of-00001
+*.pyc

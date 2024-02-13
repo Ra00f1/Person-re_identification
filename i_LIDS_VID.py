@@ -44,6 +44,57 @@ def color_jitter(image, brightness=0.4, hue=0.1, saturation=0.4):
   return image
 
 
+def Test_Triplet_Generator(Labels, Inputs, Batch_Size=128):
+    # print("Generating data...")
+    data = []
+    labels = len(Labels)
+
+    for i in range(Batch_Size):
+
+        # Selecting a random image from the dataset
+        anchor_index = np.random.randint(0, labels)
+        anchor = cv2.imread(Labels[anchor_index][2] + '/' + Labels[anchor_index][1])
+        anchor = cv2.resize(anchor, (224, 224))
+        anchor_image = anchor
+        anchor_image = np.array(anchor_image, dtype=np.uint8)
+
+        # anchor_image = anchor
+        anchor = tf.convert_to_tensor(anchor)
+
+        # Selecting a random image from the dataset
+        person_name = Labels[anchor_index][0]
+        positive_person_list = []
+        negative_person_list = []
+        for j in Inputs:
+            if j[0] == person_name:
+                positive_person_list.append(j)
+            else:
+                negative_person_list.append(j)
+
+        # Selecting a random positive image from the dataset
+        positive_index = np.random.randint(0, len(positive_person_list))
+        positive = cv2.imread(positive_person_list[positive_index][2] + '/' + positive_person_list[positive_index][1])
+        positive = cv2.resize(positive, (224, 224))
+        positive_image = positive
+        positive_image = np.array(positive_image, dtype=np.uint8)
+
+        # positive_image = positive
+        positive = tf.convert_to_tensor(positive)
+
+        # Selecting a random negative image from the dataset
+        negative_index = np.random.randint(0, len(negative_person_list))
+        negative = cv2.imread(negative_person_list[negative_index][2] + '/' + negative_person_list[negative_index][1])
+        negative = cv2.resize(negative, (224, 224))
+        negative_image = negative
+        negative_image = np.array(negative_image, dtype=np.uint8)
+
+        # negative_image = negative
+        negative = tf.convert_to_tensor(negative)
+
+        data.append([anchor, positive, negative])
+
+    return data, anchor_image, positive_image, negative_image
+
 def Triplet_Generator(Labels, Inputs, Batch_Size=128):
     # print("Generating data...")
     data = []
@@ -55,9 +106,10 @@ def Triplet_Generator(Labels, Inputs, Batch_Size=128):
         anchor_index = np.random.randint(0, labels)
         anchor = cv2.imread(Labels[anchor_index][2] + '/' + Labels[anchor_index][1])
         anchor = cv2.resize(anchor, (224, 224))
+        # anchor_image_normal = anchor
         anchor = color_jitter(anchor)
-        # anchor_image = anchor
         anchor = tf.convert_to_tensor(anchor)
+
 
         # Selecting a random image from the dataset
         person_name = Labels[anchor_index][0]
@@ -87,14 +139,6 @@ def Triplet_Generator(Labels, Inputs, Batch_Size=128):
 
         data.append([anchor, positive, negative])
 
-    # print("Data generated successfully")
-
-    # print(data[0])
-    # cv2.imshow("Anchor", anchor_image)
-    # cv2.imshow("Positive", positive_image)
-    # cv2.imshow("Negative", negative_image)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
     return data
 
 
@@ -135,4 +179,4 @@ if __name__ == '__main__':
                 Input.append([person, image, Person_path])
     # print(Input)
 
-    data = Triplet_Generator(Labels, Input, 200)
+    data = Triplet_Generator(Labels, Input, 1)

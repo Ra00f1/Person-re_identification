@@ -192,7 +192,7 @@ Person-re_identification/Models/Similarity_Network/
 Person-re_identification/Models/Similarity_Network_Adam/
 Person-re_identification/Models/Similarity_Network_SGD/
 Person-re_identification/Models/Similarity_Network_SGD2/
-Person-re_identification/Data/
+Data/
 *.whl
 *.jpg
 *.png

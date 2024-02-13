@@ -195,6 +195,7 @@ Person-re_identification/Models/Similarity_Network_SGD2/
 Person-re_identification/Data/
 Data/*
 Data/
+Person-re_identification/Data/triplets
 *.whl
 *.jpg
 *.png

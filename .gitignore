@@ -185,6 +185,9 @@ fabric.properties
 # .idea
 
 Person-re_identification/Libraries/
+Person-re_identification/Models/
+Person-re_identification/Data/
 *.whl
 *.jpg
+*.png
 *.pt

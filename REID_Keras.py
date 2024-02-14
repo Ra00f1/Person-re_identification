@@ -1,5 +1,7 @@
 import os
 import random
+from collections import defaultdict
+
 import cv2
 import numpy as np
 from keras import layers, models, optimizers
@@ -7,8 +9,8 @@ from keras.applications import ResNet50
 import tensorflow as tf
 from keras.src.initializers.initializers import GlorotUniform
 from matplotlib import pyplot as plt
-import i_LIDS_VID                                               # Custom iLIDS-VID dataset class
-import tripletloss                                              # Custom triplet loss function (Couldn't use the built-in ones)
+import i_LIDS_VID  # Custom iLIDS-VID dataset class
+import tripletloss  # Custom triplet loss function (Couldn't use the built-in ones)
 from keras.applications.resnet50 import preprocess_input
 import visualkeras
 
@@ -25,6 +27,7 @@ is the fact that the data for the Similarity model is only generated once while 
 for each batch.(Will be fixed later) 
 """
 
+
 # The Feature Extractor model class with RestNet50 as the base model
 class FeatureExtractor(models.Model):
     def __init__(self):
@@ -35,7 +38,7 @@ class FeatureExtractor(models.Model):
         # Add fully connected layers to the base model
         self.fc1 = layers.Dense(512, activation='relu')
         self.fc2 = layers.Dense(224, activation='relu')
-        self.fc3 = layers.Dense(128)     # Output embedding size is 128
+        self.fc3 = layers.Dense(128)  # Output embedding size is 128
 
     # Forward pass
     def call(self, x):
@@ -48,7 +51,6 @@ class FeatureExtractor(models.Model):
 
 # USed to create the Label and Input images for the iLIDS-VID dataset
 def Label_Input_Generator():
-
     print("Generating Labels and Inputs")
     Output_path = "D:\Projects\Person re Identification\Datasets\iLIDS-VID\i-LIDS-VID\images"
     Number_of_Cams = 2
@@ -110,7 +112,6 @@ def Start_Train_resnet50(batch_size=32, epoch=1, batch_count=10):
 
 # noinspection PyShadowingNames
 def Train_resnet50(model, triplet_loss, optimizer, batch_size, epoch, batch_count, Labels, Inputs):
-
     print("Starting Training of Resnet50")
     for epoch in range(epoch):
         print(f"Epoch {epoch + 1}")
@@ -120,7 +121,6 @@ def Train_resnet50(model, triplet_loss, optimizer, batch_size, epoch, batch_coun
             batch = i_LIDS_VID.Triplet_Generator(Labels, Inputs, batch_size)
             # j is ussed to keep track of the number of images in the batch
             for image in batch:
-
                 # Convert images to tensors using Keras preprocessing
                 anchor_tensor = preprocess_input(image[0])
                 anchor_tensor = tf.expand_dims(anchor_tensor, axis=0)
@@ -154,6 +154,7 @@ def Train_resnet50(model, triplet_loss, optimizer, batch_size, epoch, batch_coun
         print(f"Epoch {epoch + 1} completed.")
     return model
 
+
 # Save the model to the path provided using the name provided
 def Save_Model(model, path):
     print("Saving Model")
@@ -161,13 +162,7 @@ def Save_Model(model, path):
     print("Model Saved")
 
 
-def Start_Train_Similarity(batch_count, batch_size, epoch):
-    Labels, Inputs = Label_Input_Generator()
-
-    # -------------------------------------------- Feature Extractor --------------------------------------------
-
-    # Load the model
-    base_model = tf.saved_model.load("Resnet50")
+def Similarity_Model():
 
     # This is for new and untrained model(For testing purposes only)
 
@@ -183,7 +178,6 @@ def Start_Train_Similarity(batch_count, batch_size, epoch):
     # base_model.summary()  # Keras equivalent of summary
 
     # -------------------------------------------- Similarity Network --------------------------------------------
-
 
     # This is for new and untrained model
 
@@ -204,6 +198,16 @@ def Start_Train_Similarity(batch_count, batch_size, epoch):
     model.build((None, 7, 7, 128, 2))
     model.summary()
 
+    return model, optimizer
+
+def Start_Train_Similarity(batch_count, batch_size, epoch):
+    Labels, Inputs = Label_Input_Generator()
+
+    # -------------------------------------------- Feature Extractor --------------------------------------------
+
+    # Load the Feature Extractor model(Resnet50 in this case)
+    base_model = tf.saved_model.load("Models/Resnet50")
+
     # -------------------------------------------- Data Creation -------------------------------------------------------
     images = []
     similarity_labels = []
@@ -216,7 +220,7 @@ def Start_Train_Similarity(batch_count, batch_size, epoch):
             anchor_tensor = preprocess_input(batch[0])
             anchor_tensor = tf.expand_dims(anchor_tensor, axis=0)
             anchor_features = base_model(anchor_tensor)
-            #print(anchor_features.shape)
+            # print(anchor_features.shape)
 
             positive_tensor = preprocess_input(batch[1])
             positive_tensor = tf.expand_dims(positive_tensor, axis=0)
@@ -244,8 +248,8 @@ def Start_Train_Similarity(batch_count, batch_size, epoch):
     print(similarity_labels.shape)
     print(images.shape)
 
-    model, history = Train_Similarity(model, images, similarity_labels, batch_size, epoch)
-
+    #model, history = Train_Similarity(images, similarity_labels, batch_size, epoch)
+    model, history = Train_Similarity_Manual(Labels, Inputs, batch_count, batch_size, epoch)
     # -------------------------------------------- Save Model -------------------------------------------------------
     Save_Model(model, "Similarity_Network_Adam100")
 
@@ -261,8 +265,77 @@ def Start_Train_Similarity(batch_count, batch_size, epoch):
 
 
 # This function is created to just make everything look clearer and easier to understand when presenting the project
-def Train_Similarity(model, x_train, y_train, batch_size, epoch):
+def Train_Similarity(x_train, y_train, batch_size, epoch):
+    model = Similarity_Model()
     history = model.fit(x_train, y_train, epochs=epoch, batch_size=batch_size, validation_split=0.2)
+
+    return model, history
+
+
+def Data_Generator_Similarity(batch_count, batch_size, Labels, Inputs):
+    images = []
+    similarity_labels = []
+
+    # Load the Feature Extractor model(Resnet50 in this case)
+    base_model = tf.saved_model.load("Models/Resnet50")
+
+    print("Creating Data")
+    for i in range(batch_count):
+        print(f"Batch {i + 1}")
+        batchs = i_LIDS_VID.Triplet_Generator(Labels, Inputs, batch_size)
+        for batch in batchs:
+            anchor_tensor = preprocess_input(batch[0])
+            anchor_tensor = tf.expand_dims(anchor_tensor, axis=0)
+            anchor_features = base_model(anchor_tensor)
+            # print(anchor_features.shape)
+
+            positive_tensor = preprocess_input(batch[1])
+            positive_tensor = tf.expand_dims(positive_tensor, axis=0)
+            postive_features = base_model(positive_tensor)
+
+            negative_tensor = preprocess_input(batch[2])
+            negative_tensor = tf.expand_dims(negative_tensor, axis=0)
+            negative_feature = base_model(negative_tensor)
+
+            # randomly append positive or negative to the lists first
+            if random.randint(0, 1) == 0:
+                images.append([anchor_features, postive_features])
+                similarity_labels.append(1)
+                images.append([anchor_features, negative_feature])
+                similarity_labels.append(0)
+            else:
+                images.append([anchor_features, negative_feature])
+                similarity_labels.append(0)
+                images.append([anchor_features, postive_features])
+                similarity_labels.append(1)
+
+    similarity_labels = np.array(similarity_labels)
+    images = np.array(images)
+
+    return images, similarity_labels
+
+
+def Train_Similarity_Manual(Labels, Inputs, batch_count, batch_size, epoch):
+    model, optimizer = Similarity_Model()
+    history = defaultdict(list)     # Initialize history dictionary for losses and other metrics
+
+    for i in range(epoch):
+        x_train, y_train = Data_Generator_Similarity(batch_count, batch_size, Labels, Inputs)
+        x_train = np.expand_dims(x_train, axis=0)
+        print(x_train.shape)
+        print(y_train.shape)
+        for j in range(len(x_train)):
+            with tf.GradientTape() as tape:
+                output = model(x_train[j])
+                print(output.shape)
+                print(y_train[j])
+                loss = tf.keras.losses.binary_crossentropy(y_train[j], output)
+
+            grads = tape.gradient(loss, model.trainable_weights)
+            optimizer.apply_gradients(zip(grads, model.trainable_weights))
+            history['loss'].append(loss)
+
+            print(f"Epoch {i + 1} Batch {j + 1} Loss: {loss}")
 
     return model, history
 
@@ -345,7 +418,7 @@ if __name__ == '__main__':
 
     # Start_Train_resnet50(batch_count=50, batch_size=32, epoch=50)
 
-    Start_Train_Similarity(batch_count=100, batch_size=32, epoch=500)
+    Start_Train_Similarity(batch_count=1, batch_size=6, epoch=1)
 
     # Start_Testing(Test_Number=10, model_name="Similarity_Network_SGD2")
     # Start_Testing(Test_Number=10, model_name="Similarity_Network_Adam")

@@ -327,9 +327,12 @@ def Train_Similarity_Manual(Labels, Inputs, batch_count, batch_size, epoch):
         for j in range(len(x_train)):
             with tf.GradientTape() as tape:
                 output = model(x_train[j])
-                print(output.shape)
-                print(y_train[j])
-                loss = tf.keras.losses.binary_crossentropy(y_train[j], output)
+                print(type(output))
+                output = tf.convert_to_tensor(output)
+                output = [output]
+                print(type(y_train))
+                print(y_train)
+                loss = tf.keras.losses.binary_crossentropy(y_train, output)
 
             grads = tape.gradient(loss, model.trainable_weights)
             optimizer.apply_gradients(zip(grads, model.trainable_weights))
@@ -418,7 +421,7 @@ if __name__ == '__main__':
 
     # Start_Train_resnet50(batch_count=50, batch_size=32, epoch=50)
 
-    Start_Train_Similarity(batch_count=1, batch_size=6, epoch=1)
+    Start_Train_Similarity(batch_count=10, batch_size=24, epoch=10)
 
     # Start_Testing(Test_Number=10, model_name="Similarity_Network_SGD2")
     # Start_Testing(Test_Number=10, model_name="Similarity_Network_Adam")

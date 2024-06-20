@@ -208,60 +208,20 @@ def Start_Train_Similarity(batch_count, batch_size, epoch):
     # Load the Feature Extractor model(Resnet50 in this case)
     base_model = tf.saved_model.load("Models/Resnet50")
 
-    # -------------------------------------------- Data Creation -------------------------------------------------------
-    images = []
-    similarity_labels = []
-
-    print("Creating Data")
-    for i in range(batch_count):
-        print(f"Batch {i + 1}")
-        batchs = i_LIDS_VID.Triplet_Generator(Labels, Inputs, batch_size)
-        for batch in batchs:
-            anchor_tensor = preprocess_input(batch[0])
-            anchor_tensor = tf.expand_dims(anchor_tensor, axis=0)
-            anchor_features = base_model(anchor_tensor)
-            # print(anchor_features.shape)
-
-            positive_tensor = preprocess_input(batch[1])
-            positive_tensor = tf.expand_dims(positive_tensor, axis=0)
-            postive_features = base_model(positive_tensor)
-
-            negative_tensor = preprocess_input(batch[2])
-            negative_tensor = tf.expand_dims(negative_tensor, axis=0)
-            negative_feature = base_model(negative_tensor)
-
-            # randomly append positive or negative to the lists first
-            if random.randint(0, 1) == 0:
-                images.append([anchor_features, postive_features])
-                similarity_labels.append(1)
-                images.append([anchor_features, negative_feature])
-                similarity_labels.append(0)
-            else:
-                images.append([anchor_features, negative_feature])
-                similarity_labels.append(0)
-                images.append([anchor_features, postive_features])
-                similarity_labels.append(1)
-
-    similarity_labels = np.array(similarity_labels)
-    images = np.array(images)
-
-    print(similarity_labels.shape)
-    print(images.shape)
-
     #model, history = Train_Similarity(images, similarity_labels, batch_size, epoch)
     model, history = Train_Similarity_Manual(Labels, Inputs, batch_count, batch_size, epoch)
     # -------------------------------------------- Save Model -------------------------------------------------------
     Save_Model(model, "Similarity_Network_Adam100")
 
     # Draw plots for accuracy and loss
-    plt.plot(history.history['accuracy'])
-    plt.plot(history.history['val_accuracy'])
-    plt.title('Model Accuracy')
-    plt.ylabel('Accuracy')
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Validation'], loc='upper left')
-    plt.savefig('Accuracy.png')
-    plt.show()
+    # plt.plot(history.history['accuracy'])
+    # plt.plot(history.history['val_accuracy'])
+    # plt.title('Model Accuracy')
+    # plt.ylabel('Accuracy')
+    # plt.xlabel('Epoch')
+    # plt.legend(['Train', 'Validation'], loc='upper left')
+    # plt.savefig('Accuracy.png')
+    # plt.show()
 
 
 # This function is created to just make everything look clearer and easier to understand when presenting the project
@@ -318,28 +278,48 @@ def Data_Generator_Similarity(batch_count, batch_size, Labels, Inputs):
 def Train_Similarity_Manual(Labels, Inputs, batch_count, batch_size, epoch):
     model, optimizer = Similarity_Model()
     history = defaultdict(list)     # Initialize history dictionary for losses and other metrics
+    val_data, val_label = Data_Generator_Similarity(batch_count, batch_size, Labels, Inputs)
 
     for i in range(epoch):
+        train_acc = 0  # Initialize accuracy accumulator for training data
+        val_accuracy = 0   # Initialize accuracy accumulator for validation data
+        train_batches = 0  # Counter for training batches
+
         x_train, y_train = Data_Generator_Similarity(batch_count, batch_size, Labels, Inputs)
         x_train = np.expand_dims(x_train, axis=0)
-        print(x_train.shape)
-        print(y_train.shape)
+
         for j in range(len(x_train)):
             with tf.GradientTape() as tape:
                 output = model(x_train[j])
-                print(type(output))
                 output = tf.convert_to_tensor(output)
                 output = [output]
-                print(type(y_train))
-                print(y_train)
                 loss = tf.keras.losses.binary_crossentropy(y_train, output)
 
             grads = tape.gradient(loss, model.trainable_weights)
             optimizer.apply_gradients(zip(grads, model.trainable_weights))
-            history['loss'].append(loss)
+            history['loss'].append(loss.numpy())
 
-            print(f"Epoch {i + 1} Batch {j + 1} Loss: {loss}")
+            # Calculate accuracy for the current batch
+            predictions = tf.round(output)
+            accuracy = np.mean(predictions == y_train)
+            train_acc += accuracy
+            print(f"Epoch {i+1}/{epoch}, Batch {j+1}/{len(x_train)}, Accuracy: {accuracy}, Loss: {loss}, train_acc : {train_acc}")
+            train_batches += 1
 
+        # Compute average training accuracy for the epoch
+        train_acc /= train_batches
+        print(f"Epoch {i+1}/{epoch}, Validation Accuracy: {train_acc}")
+
+        # Validation accuracy calculation
+        # val_data, val_label = Data_Generator_Similarity(batch_count, batch_size, Labels, Inputs)
+        # val_data = np.expand_dims(val_data, axis=0)
+        # val_label = np.array(val_label)
+        # val_output = model(val_data)
+        # val_predictions = tf.round(val_output)
+        # val_accuracy = np.mean(val_predictions == val_label)
+        # print(f"Epoch {i+1}/{epoch}, Validation Accuracy: {val_accuracy}")
+
+    print(history)
     return model, history
 
 
@@ -421,7 +401,7 @@ if __name__ == '__main__':
 
     # Start_Train_resnet50(batch_count=50, batch_size=32, epoch=50)
 
-    Start_Train_Similarity(batch_count=10, batch_size=24, epoch=10)
+    Start_Train_Similarity(batch_count=5, batch_size=12, epoch=5)
 
     # Start_Testing(Test_Number=10, model_name="Similarity_Network_SGD2")
     # Start_Testing(Test_Number=10, model_name="Similarity_Network_Adam")

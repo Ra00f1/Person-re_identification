@@ -1,6 +1,6 @@
 # Person Re-Identification (ReID) Project
 ## Overview
-This project focuses on Person Re-Identification (ReID), a technology crucial in computer vision and video analysis. ReID involves recognizing and tracking individuals across multiple non-overlapping camera views, linking or matching images of the same person captured by different cameras within a surveillance system. This project leverages various methodologies, datasets, and models to improve the accuracy and efficiency of ReID systems.
+This project focuses on Person Re-Identification (ReID), a critical technology in computer vision and video analysis. ReID aims to recognize and track individuals across multiple non-overlapping camera views, linking or matching images of the same person captured by different cameras within a surveillance system. This project explores various methodologies, datasets, and models to test and improve ReID systems. The primary goal was to implement and evaluate a hand-coded method developed for a school project.
 
 ## Applications
 Security and Surveillance: Track individuals across cameras in public spaces to identify suspects and monitor crowds.
